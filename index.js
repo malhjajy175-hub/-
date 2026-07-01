@@ -18,7 +18,10 @@ async function startBot() {
   sock.ev.on('creds.update', saveCreds);
 
   if (!state.creds.registered) {
+    let codeRequested = false;
     sock.ws.on('open', async () => {
+      if (codeRequested) return;
+      codeRequested = true;
       try {
         const code = await sock.requestPairingCode(process.env.PHONE_NUMBER);
         console.log('كود الربط:', code);
