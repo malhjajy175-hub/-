@@ -18,8 +18,14 @@ async function startBot() {
   sock.ev.on('creds.update', saveCreds);
 
   if (!state.creds.registered) {
-    const code = await sock.requestPairingCode(process.env.PHONE_NUMBER);
-    console.log('كود الربط:', code);
+    sock.ws.on('open', async () => {
+      try {
+        const code = await sock.requestPairingCode(process.env.PHONE_NUMBER);
+        console.log('كود الربط:', code);
+      } catch (e) {
+        console.log('خطأ بطلب الكود:', e.message);
+      }
+    });
   }
 
   sock.ev.on('connection.update', (update) => {
