@@ -34,6 +34,7 @@ async function startBot() {
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect } = update;
     if (connection === 'close') {
+      console.log('سبب الإغلاق:', lastDisconnect?.error?.message, lastDisconnect?.error?.output?.statusCode);
       if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) startBot();
     } else if (connection === 'open') {
       console.log('متصل ✅');
