@@ -7,6 +7,8 @@ const groq = new OpenAI({
   baseURL: 'https://api.groq.com/openai/v1'
 });
 
+let codeRequested = false; // خارج الفانكشن عشان يبقى محفوظ حتى لو startBot تكررت
+
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info');
   const sock = makeWASocket({
@@ -17,11 +19,9 @@ async function startBot() {
 
   sock.ev.on('creds.update', saveCreds);
 
-  if (!state.creds.registered) {
-    let codeRequested = false;
+  if (!state.creds.registered && !codeRequested) {
+    codeRequested = true;
     sock.ws.on('open', async () => {
-      if (codeRequested) return;
-      codeRequested = true;
       try {
         const code = await sock.requestPairingCode(process.env.PHONE_NUMBER);
         console.log('كود الربط:', code);
@@ -35,7 +35,12 @@ async function startBot() {
     const { connection, lastDisconnect } = update;
     if (connection === 'close') {
       console.log('سبب الإغلاق:', lastDisconnect?.error?.message, lastDisconnect?.error?.output?.statusCode);
-      if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) startBot();
+      // ما نعيد طلب كود جديد أبدًا — بس نعيد محاولة الاتصال لو كان مسجل مسبقًا
+      if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut && state.creds.registered) {
+        setTimeout(() => startBot(), 15000);
+      } else {
+        console.log('توقف البوت — لازم إعادة تشغيل يدوية لطلب كود جديد.');
+      }
     } else if (connection === 'open') {
       console.log('متصل ✅');
     }
